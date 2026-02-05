@@ -1,11 +1,12 @@
 server:
+  # Render automatically detects port 10000
   port: ${PORT:8081}
 
 spring:
   application:
     name: user-service
   datasource:
-    # Local pe 'localhost' aur Cloud pe Railway ka URL auto-pick hoga
+    # Database connection for Railway/Render PostgreSQL
     url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/ecoride_user_db}
     username: ${SPRING_DATASOURCE_USERNAME:postgres}
     password: ${SPRING_DATASOURCE_PASSWORD:sourabh@2003}
@@ -19,8 +20,15 @@ spring:
 
 eureka:
   instance:
-    prefer-ip-address: true
+    # Render par dynamic IPs ki wajah se hostname use karna better hai
+    prefer-ip-address: false
+    # Service ka exact URL taaki Gateway dhoond sake
+    hostname: ecoride-deploy-user.onrender.com
+    # Render's specific port binding
+    non-secure-port: ${server.port}
   client:
     service-url:
-      # Local/Docker registry fallback ke saath
-      defaultZone: ${EUREKA_SERVER_URL:http://localhost:8761/eureka/}
+      # Aapka live Eureka Server link
+      defaultZone: ${EUREKA_SERVER_URL:https://service-registry-qhsy.onrender.com/eureka/}
+    register-with-eureka: true
+    fetch-registry: true
