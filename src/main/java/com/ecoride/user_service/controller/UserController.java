@@ -98,6 +98,16 @@ public class UserController {
                 .orElse(null);
     }
 
+    // UserController.java mein ye add karo
+    @PutMapping("/{id}/toggle-online")
+    public ResponseEntity<String> toggleOnline(@PathVariable Long id, @RequestParam boolean status) {
+        return userRepository.findById(id).map(user -> {
+            user.setIsOnline(status); // User model mein 'private Boolean isOnline = false' hona chahiye
+            userRepository.save(user);
+            return ResponseEntity.ok("Driver is now " + (status ? "Online" : "Offline"));
+        }).orElse(ResponseEntity.notFound().build());
+    }
+
     @GetMapping("/get-role")
     public String getUserRoleByEmail(@RequestParam String email) {
         return userRepository.findByEmail(email)

@@ -42,4 +42,15 @@ public class User {
     public void setApproved(Boolean approved) {
         this.isApproved = approved;
     }
+
+    private Boolean isOnline = false;
+
+    public Boolean getIsOnline() {
+        return isOnline;
+    }
+
+    public void setIsOnline(Boolean online) {
+        this.isOnline = online;
+    }
+
 }
