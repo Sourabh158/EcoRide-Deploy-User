@@ -31,7 +31,6 @@ public class UserController {
     public Map<String, Object> getUserStats() {
         List<User> allUsers = userRepository.findAll();
 
-        // FIX: .isApproved() ki jagah .getApproved() use kiya gaya hai private access handle karne ke liye
         long activeDrivers = allUsers.stream()
                 .filter(u -> "DRIVER".equals(u.getRole()) && Boolean.TRUE.equals(u.getApproved()))
                 .count();
@@ -49,7 +48,8 @@ public class UserController {
 
     @GetMapping("/profile")
     public ResponseEntity<User> getProfile(@RequestHeader("loggedInUser") String email) {
-        return userRepository.findByEmail(email)
+        // Email normalization added
+        return userRepository.findByEmail(email.toLowerCase().trim())
                 .map(user -> {
                     user.setPassword(null);
                     return ResponseEntity.ok(user);
@@ -59,7 +59,9 @@ public class UserController {
 
     @PostMapping("/login")
     public String login(@RequestBody User loginRequest) {
-        User user = userRepository.findByEmail(loginRequest.getEmail()).orElse(null);
+        // Normalize email to match DB
+        String email = loginRequest.getEmail().toLowerCase().trim();
+        User user = userRepository.findByEmail(email).orElse(null);
 
         if (user != null && passwordEncoder.matches(loginRequest.getPassword(), user.getPassword())) {
             return jwtUtil.generateToken(user.getEmail());
@@ -70,10 +72,13 @@ public class UserController {
 
     @PostMapping("/register")
     public String register(@RequestBody User user) {
-        if(userRepository.findByEmail(user.getEmail()).isPresent()) {
-            return "Error: Email '" + user.getEmail() + "' is already registered!";
+        // Normalize email before saving
+        String normalizedEmail = user.getEmail().toLowerCase().trim();
+        if(userRepository.findByEmail(normalizedEmail).isPresent()) {
+            return "Error: Email '" + normalizedEmail + "' is already registered!";
         }
 
+        user.setEmail(normalizedEmail);
         user.setPassword(passwordEncoder.encode(user.getPassword()));
         userRepository.save(user);
         return user.getRole() + " registered successfully with ID: " + user.getId();
@@ -91,18 +96,19 @@ public class UserController {
         return userRepository.findAll();
     }
 
+    // FIXED: Ye endpoint 404 de raha tha, ab lowercase match karega
     @GetMapping("/get-id")
     public Long getUserIdByEmail(@RequestParam String email) {
-        return userRepository.findByEmail(email)
+        System.out.println("DEBUG: Fetching ID for email: " + email);
+        return userRepository.findByEmail(email.toLowerCase().trim())
                 .map(User::getId)
                 .orElse(null);
     }
 
-    // UserController.java mein ye add karo
     @PutMapping("/{id}/toggle-online")
     public ResponseEntity<String> toggleOnline(@PathVariable Long id, @RequestParam boolean status) {
         return userRepository.findById(id).map(user -> {
-            user.setIsOnline(status); // User model mein 'private Boolean isOnline = false' hona chahiye
+            user.setIsOnline(status);
             userRepository.save(user);
             return ResponseEntity.ok("Driver is now " + (status ? "Online" : "Offline"));
         }).orElse(ResponseEntity.notFound().build());
@@ -110,7 +116,7 @@ public class UserController {
 
     @GetMapping("/get-role")
     public String getUserRoleByEmail(@RequestParam String email) {
-        return userRepository.findByEmail(email)
+        return userRepository.findByEmail(email.toLowerCase().trim())
                 .map(User::getRole)
                 .orElse("RIDER");
     }
@@ -148,7 +154,7 @@ public class UserController {
 
             User driver = new User();
             driver.setName(name);
-            driver.setEmail(email);
+            driver.setEmail(email.toLowerCase().trim()); // Lowercase for driver too
             driver.setPassword(passwordEncoder.encode(password));
             driver.setRole("DRIVER");
             driver.setVehicleNumber(vehicleNumber);
