@@ -11,6 +11,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.File;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/users")
@@ -24,6 +25,27 @@ public class UserController {
 
     @Autowired
     private JwtUtil jwtUtil;
+
+    // Admin Dashboard Stats logic
+    @GetMapping("/admin/stats")
+    public Map<String, Object> getUserStats() {
+        List<User> allUsers = userRepository.findAll();
+
+        // FIX: .isApproved() ki jagah .getApproved() use kiya gaya hai private access handle karne ke liye
+        long activeDrivers = allUsers.stream()
+                .filter(u -> "DRIVER".equals(u.getRole()) && Boolean.TRUE.equals(u.getApproved()))
+                .count();
+
+        long pendingVerifications = allUsers.stream()
+                .filter(u -> "DRIVER".equals(u.getRole()) && !Boolean.TRUE.equals(u.getApproved()))
+                .count();
+
+        return Map.of(
+                "activeDrivers", activeDrivers,
+                "pendingVerifications", pendingVerifications,
+                "totalUsers", allUsers.size()
+        );
+    }
 
     @GetMapping("/profile")
     public ResponseEntity<User> getProfile(@RequestHeader("loggedInUser") String email) {
@@ -76,15 +98,14 @@ public class UserController {
                 .orElse(null);
     }
 
-// UserController.java mein ye method jodo taaki frontend Role pehchan sake
-@GetMapping("/get-role")
-public String getUserRoleByEmail(@RequestParam String email) {
-    return userRepository.findByEmail(email)
-            .map(User::getRole) // Ye database se 'ADMIN', 'DRIVER', ya 'RIDER' bhejega
-            .orElse("RIDER");
-}
+    @GetMapping("/get-role")
+    public String getUserRoleByEmail(@RequestParam String email) {
+        return userRepository.findByEmail(email)
+                .map(User::getRole)
+                .orElse("RIDER");
+    }
 
-    @PutMapping("/{id}/update-earnings") // Ye sahi hai
+    @PutMapping("/{id}/update-earnings")
     public void updateEarnings(@PathVariable Long id, @RequestParam Double amount) {
         User user = userRepository.findById(id).orElseThrow(() -> new RuntimeException("User not found"));
 
@@ -105,17 +126,14 @@ public String getUserRoleByEmail(@RequestParam String email) {
             @RequestParam("licenseImage") MultipartFile file) {
 
         try {
-            // Docker container ke liye sahi Linux path
             String uploadDir = "/app/uploads/";
             File dir = new File(uploadDir);
 
-            // Agar folder nahi hai toh bana do
             if (!dir.exists()) {
                 dir.mkdirs();
             }
 
             String fileName = System.currentTimeMillis() + "_" + file.getOriginalFilename();
-            // Bina "C:/" ke seedha path use karo
             file.transferTo(new File(uploadDir + fileName));
 
             User driver = new User();

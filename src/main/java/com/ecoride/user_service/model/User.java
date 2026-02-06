@@ -34,7 +34,12 @@ public class User {
     private Boolean isApproved = false;
 
     // Custom helper (Lombok handles basic ones, but keeping for clarity)
-    public void setApproved(boolean approved) {
+    public Boolean getApproved() {
+        return isApproved;
+    }
+
+    // User.java mein ye add karein
+    public void setApproved(Boolean approved) {
         this.isApproved = approved;
     }
 }
