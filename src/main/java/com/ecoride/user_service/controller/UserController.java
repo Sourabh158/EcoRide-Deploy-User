@@ -76,6 +76,14 @@ public class UserController {
                 .orElse(null);
     }
 
+// UserController.java mein ye method jodo taaki frontend Role pehchan sake
+@GetMapping("/get-role")
+public String getUserRoleByEmail(@RequestParam String email) {
+    return userRepository.findByEmail(email)
+            .map(User::getRole) // Ye database se 'ADMIN', 'DRIVER', ya 'RIDER' bhejega
+            .orElse("RIDER");
+}
+
     @PutMapping("/{id}/update-earnings") // Ye sahi hai
     public void updateEarnings(@PathVariable Long id, @RequestParam Double amount) {
         User user = userRepository.findById(id).orElseThrow(() -> new RuntimeException("User not found"));
