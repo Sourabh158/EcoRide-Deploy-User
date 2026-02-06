@@ -97,10 +97,14 @@ public class UserController {
     }
 
     // FIXED: Ye endpoint 404 de raha tha, ab lowercase match karega
+    // UserController.java ke andar is method ko update karein
     @GetMapping("/get-id")
     public Long getUserIdByEmail(@RequestParam String email) {
-        System.out.println("DEBUG: Fetching ID for email: " + email);
-        return userRepository.findByEmail(email.toLowerCase().trim())
+        // Trim spaces aur convert to lowercase taaki DB se match ho jaye
+        String normalizedEmail = email.trim().toLowerCase();
+        System.out.println("DEBUG: Searching for normalized email: " + normalizedEmail);
+
+        return userRepository.findByEmail(normalizedEmail)
                 .map(User::getId)
                 .orElse(null);
     }
